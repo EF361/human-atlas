@@ -1,0 +1,42 @@
+# Hermes Agent Configuration
+# Model: OpenAI GPT-6 Astra (Flagship reasoning & agentic browser operator)
+
+version: 1
+
+# Default LLM Provider & Model routing
+default_model: "openai/gpt-6-astra"
+
+models:
+  primary: "openai/gpt-6-astra"
+  fallback: "openrouter/openai/gpt-6-astra"
+  fast: "openai/gpt-4o-mini"
+
+providers:
+  openai:
+    api_key_env: "OPENAI_API_KEY"
+    base_url: "https://api.openai.com/v1"
+  openrouter:
+    api_key_env: "OPENROUTER_API_KEY"
+    base_url: "https://openrouter.ai/api/v1"
+
+# Agent runtime behaviors
+agent:
+  name: "Atlas-Hermes"
+  personality: "Expert Anatomist & 3D Anatomy Guide"
+  temperature: 0.2
+  max_iterations: 30
+  persist_memory: true
+
+# Active Skills directory
+skills:
+  paths:
+    - "./skills"
+    - "./hermes/skills"
+
+# MCP Tool Servers
+mcp_servers:
+  human_atlas:
+    command: "node"
+    args: ["./scripts/atlas-mcp-server.mjs"]
+    env:
+      NODE_ENV: "production"
