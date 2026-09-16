@@ -71,64 +71,66 @@ export default function Home(){
  return <main className="studio">
   {atlas&&<AnatomyScene atlas={atlas} state={{...state,inspectorOpen:details&&selectedParts.length>0}} onSelect={choosePart} onProgress={n=>{setProgress(n);if(n===100)setError('');}} onError={setError}/>}
   <div className="vignette"/>
-  <header className="identity">
-   <div className="eyebrow"><span className="status-dot"/> INTERACTIVE ANATOMY</div>
-   <h1>Human Atlas<Badge variant="outline" className="edition">3D</Badge></h1>
-   <div className="identity-meta">{atlas?atlas.parts.length.toLocaleString():sex==='female'?'2,341':'2,234'} modeled pieces <span>·</span> {sex==='female'?'Adult Female Anatomy':'Adult Male Anatomy'}</div>
-   <div className="sex-switcher" style={{marginTop:10,display:'flex',gap:4,background:'#edf0f2',padding:'3px 4px',borderRadius:8,width:'fit-content',pointerEvents:'auto'}}>
-    <Button variant="ghost" size="sm" style={{fontSize:11,height:26,padding:'0 10px',borderRadius:6,background:sex==='male'?'#263b48':'transparent',color:sex==='male'?'#ffffff':'#5a6875',fontWeight:sex==='male'?600:400}} onClick={()=>setSex('male')}>
-     Male ♂
+   <header className="identity">
+    <div className="eyebrow desktop-only"><span className="status-dot"/> INTERACTIVE ANATOMY</div>
+    <div className="identity-brand">
+     <h1>Human Atlas<Badge variant="outline" className="edition">3D</Badge></h1>
+     <div className="sex-switcher" role="radiogroup" aria-label="Biological sex">
+      <Button variant="ghost" size="sm" className={sex==='male'?'active':''} onClick={()=>setSex('male')}>
+       Male ♂
+      </Button>
+      <Button variant="ghost" size="sm" className={sex==='female'?'active':''} onClick={()=>setSex('female')}>
+       Female ♀
+      </Button>
+     </div>
+    </div>
+    <div className="identity-meta desktop-only">{atlas?atlas.parts.length.toLocaleString():sex==='female'?'2,341':'2,234'} modeled pieces <span>·</span> {sex==='female'?'Adult Female Anatomy':'Adult Male Anatomy'}</div>
+   </header>
+   <nav className="top-actions" aria-label="Explorer panels"><Button variant="ghost" className={`icon-button ${panel==='search'?'active':''}`} onClick={()=>openPanel('search')} aria-label="Search anatomy"><Search size={18}/><span className="desktop-only">Find a structure</span><kbd className="desktop-only">/</kbd></Button><Button variant="ghost" className="icon-button" aria-label="About this atlas" onClick={()=>{setDetails(false);setPanel(null);setAbout(true);}}><Info size={18}/></Button></nav>
+   {panel&&<div className="mobile-backdrop mobile-only" onClick={()=>setPanel(null)} aria-hidden="true"/>}
+   <section className={`layers-panel glass ${panel==='layers'?'mobile-open':''}`} aria-label="Anatomical layers">
+    <div className="sheet-handle mobile-only" />
+    <div className="panel-heading"><span>Systems</span><Button variant="ghost" className="mobile-only icon-button" onClick={()=>setPanel(null)} aria-label="Close systems"><X size={18}/></Button><Badge variant="secondary" className="desktop-only small-number">{activeSystems.length}</Badge></div>
+    <div className="layer-presets">
+     <Button variant="ghost" aria-pressed={activeSystems.every(x=>state.visible.includes(x.id))} onClick={()=>setState(s=>({...s,selected:[],isolate:false,visible:activeSystems.map(x=>x.id).filter(x=>x!=='pregnancy')}))}>All</Button>
+     <Button variant="ghost" aria-pressed={state.visible.length===1&&state.visible[0]==='skeletal'} onClick={()=>setState(s=>({...s,selected:[],isolate:false,visible:['skeletal']}))}>Skeleton</Button>
+     <Button variant="ghost" aria-pressed={['cardiac','respiratory','digestive','urinary','endocrine','reproductive'].every(id=>state.visible.includes(id as SystemId))} onClick={()=>setState(s=>({...s,selected:[],isolate:false,visible:['cardiac','respiratory','digestive','urinary','endocrine','reproductive']}))}>Organs</Button>
+     <Button variant="ghost" aria-pressed={state.visible.length===1&&state.visible[0]==='reproductive'} onClick={()=>setState(s=>({...s,selected:[],isolate:false,visible:['reproductive']}))}>Reproductive</Button>
+    </div>
+    <div className="system-list">{activeSystems.map(s=><div className={`system-row ${state.visible.includes(s.id)?'enabled':''}`} key={s.id}><Button variant="ghost" className="system-name" title={`Show only ${s.name.toLowerCase()}`} onClick={()=>setState(v=>({...v,visible:[s.id],isolate:false,selected:[]}))}><span className="system-dot" style={{background:s.color}}/>{s.name}<span className="system-count">{counts[s.id]}</span></Button><Switch checked={state.visible.includes(s.id)} onCheckedChange={()=>toggle(s.id)} aria-label={`Show ${s.name.toLowerCase()}`} /></div>)}</div>
+    <div className="panel-foot"><span>{visibleCount.toLocaleString()} pieces visible</span><Button variant="ghost" onClick={()=>setState(s=>({...s,visible:[],selected:[],isolate:false}))}>Hide all</Button></div>
+   </section>
+   {panel==='search'&&<section className="search-panel glass" aria-label="Find anatomy">
+    <div className="sheet-handle mobile-only" />
+    <div className="panel-heading"><span>Find a structure</span><Button variant="ghost" className="icon-button" onClick={()=>setPanel(null)} aria-label="Close search"><X size={18}/></Button></div>
+    <div className="search-quick-tags" style={{display:'flex',gap:5,overflowX:'auto',padding:'8px 0 2px',scrollbarWidth:'none',WebkitOverflowScrolling:'touch'}}>
+     {['Heart','Kidney','Uterus','Brain','Stomach','Femur','Ovaries','Lungs'].map(term => (
+      <Button key={term} variant="ghost" size="sm" style={{fontSize:11,height:26,padding:'0 9px',borderRadius:13,background:'#edf0f2',color:'#475569',flexShrink:0,fontWeight:500}} onClick={() => {
+        setQuery(term);
+        const match = atlas?.concepts.find(c => c.name.toLowerCase() === term.toLowerCase() || c.name.toLowerCase().includes(term.toLowerCase()));
+        if (match) choose(match);
+      }}>
+       {term}
+      </Button>
+     ))}
+    </div>
+    <Combobox<Concept> items={results} value={null} onValueChange={value=>{if(value)choose(value);}} inputValue={query} onInputValueChange={setQuery} itemToStringLabel={c=>c.name} filter={null} open onOpenChange={open=>{if(!open)setPanel(null);}}><ComboboxInput autoFocus placeholder="Heart, kidney, uterus, femur…" aria-label="Search named anatomical structures" showTrigger={false}/><ComboboxContent className="anatomy-search-results"><ComboboxEmpty>No structures match your search.</ComboboxEmpty><ComboboxList>{(c:Concept)=><ComboboxItem key={c.id} value={c}><span className="search-result-name">{c.name}</span><span className="small-number">{c.elements.length} {c.elements.length===1?'piece':'pieces'}</span></ComboboxItem>}</ComboboxList></ComboboxContent></Combobox><p className="search-note">{query?'Showing up to 80 matches. Refine your search to find smaller structures.':'Start with a major organ, or search every named structure.'}</p></section>}
+   <nav className="view-controls glass" aria-label="Camera controls">{(['three-quarter','front','side','back'] as View[]).map((v,i)=><Button variant="ghost" key={v} className={state.view===v?'active':''} aria-pressed={state.view===v} disabled={state.explode>.8&&v!=='front'} onClick={()=>setState(s=>({...s,view:v,reset:s.reset+1,rotate:false}))} title={`${v} view`} aria-label={`${v} view`}><span>{['¾','F','S','B'][i]}</span></Button>)}<i/><Button variant="ghost" disabled={state.explode>=.4} aria-label={state.rotate?'Pause rotation':'Rotate body'} title="Auto rotate" className={state.rotate?'active':''} onClick={()=>setState(s=>({...s,rotate:!s.rotate}))}>{state.rotate?<Pause size={17}/>:<RotateCw size={18}/>}</Button><Button variant="ghost" aria-label="Reset view and layers" title="Reset" onClick={reset}><RotateCcw size={17}/></Button></nav>
+   <div className="scene-caption"><span className="caption-line desktop-only"/><span>{state.isolate?(chosen?.name??'SELECTED STRUCTURE'):state.explode>.95?'ANATOMICAL INVENTORY':state.explode>.05?'SEPARATED STRUCTURES':sex==='female'?'ADULT FEMALE':'ADULT MALE'}</span><span className="caption-line desktop-only"/></div>
+   <div className="bottom-dock glass">
+    <Button variant="ghost" className="mobile-only dock-btn dock-layers" onClick={()=>openPanel('layers')} aria-label="Open system layers"><Layers3 size={18}/><span>Systems</span></Button>
+    <div className="explode-control">
+     <div className="explode-label"><label id="explode-label"><span className="desktop-only">Explode anatomy</span><span className="mobile-only">Explode</span></label><output>{Math.round(state.explode*100)}<span>%</span></output></div>
+     <Slider aria-labelledby="explode-label" min={0} max={100} step={1} value={[state.explode*100]} onValueChange={v=>setState(s=>({...s,explode:(Array.isArray(v)?v[0]:v)/100,view:(Array.isArray(v)?v[0]:v)>80?'front':s.view,rotate:false}))}/>
+     <div className="slider-endpoints desktop-only"><span>Assembled</span><span>Every piece</span></div>
+    </div>
+    <Button variant="ghost" className="dock-btn dock-slice" style={{padding:'6px 8px',display:'flex',flexDirection:'column',gap:3,fontSize:10,color:(state.crossSection??0)>0?'#0284c7':'#687683'}} onClick={()=>setState(s=>({...s,crossSection:(s.crossSection??0)>0?0:0.5}))} title="Cross-section inner slice">
+     <Scissors size={17}/>
+     <span>{(state.crossSection??0)>0?'Sliced':'Slice'}</span>
     </Button>
-    <Button variant="ghost" size="sm" style={{fontSize:11,height:26,padding:'0 10px',borderRadius:6,background:sex==='female'?'#263b48':'transparent',color:sex==='female'?'#ffffff':'#5a6875',fontWeight:sex==='female'?600:400}} onClick={()=>setSex('female')}>
-     Female ♀
-    </Button>
+    <Button variant="ghost" className="dock-btn dock-reset" onClick={reset} aria-label="Assemble and reset"><RotateCcw size={17}/><span>Reset</span></Button>
    </div>
-  </header>
-  <nav className="top-actions" aria-label="Explorer panels"><Button variant="ghost" className={panel==='search'?'active':''} onClick={()=>openPanel('search')} aria-label="Search anatomy"><Search size={18}/><span>Find a structure</span><kbd>/</kbd></Button><Button variant="ghost" className="icon-button" aria-label="About this atlas" onClick={()=>{setDetails(false);setPanel(null);setAbout(true);}}><Info size={18}/></Button></nav>
-  {panel&&<div className="mobile-backdrop mobile-only" onClick={()=>setPanel(null)} aria-hidden="true"/>}
-  <section className={`layers-panel glass ${panel==='layers'?'mobile-open':''}`} aria-label="Anatomical layers">
-   <div className="sheet-handle mobile-only" />
-   <div className="panel-heading"><span>Systems</span><Button variant="ghost" className="mobile-only icon-button" onClick={()=>setPanel(null)} aria-label="Close systems"><X size={18}/></Button><Badge variant="secondary" className="desktop-only small-number">{activeSystems.length}</Badge></div>
-   <div className="layer-presets">
-    <Button variant="ghost" aria-pressed={activeSystems.every(x=>state.visible.includes(x.id))} onClick={()=>setState(s=>({...s,selected:[],isolate:false,visible:activeSystems.map(x=>x.id).filter(x=>x!=='pregnancy')}))}>All</Button>
-    <Button variant="ghost" aria-pressed={state.visible.length===1&&state.visible[0]==='skeletal'} onClick={()=>setState(s=>({...s,selected:[],isolate:false,visible:['skeletal']}))}>Skeleton</Button>
-    <Button variant="ghost" aria-pressed={['cardiac','respiratory','digestive','urinary','endocrine','reproductive'].every(id=>state.visible.includes(id as SystemId))} onClick={()=>setState(s=>({...s,selected:[],isolate:false,visible:['cardiac','respiratory','digestive','urinary','endocrine','reproductive']}))}>Organs</Button>
-    <Button variant="ghost" aria-pressed={state.visible.length===1&&state.visible[0]==='reproductive'} onClick={()=>setState(s=>({...s,selected:[],isolate:false,visible:['reproductive']}))}>Reproductive</Button>
-   </div>
-   <div className="system-list">{activeSystems.map(s=><div className={`system-row ${state.visible.includes(s.id)?'enabled':''}`} key={s.id}><Button variant="ghost" className="system-name" title={`Show only ${s.name.toLowerCase()}`} onClick={()=>setState(v=>({...v,visible:[s.id],isolate:false,selected:[]}))}><span className="system-dot" style={{background:s.color}}/>{s.name}<span className="system-count">{counts[s.id]}</span></Button><Switch checked={state.visible.includes(s.id)} onCheckedChange={()=>toggle(s.id)} aria-label={`Show ${s.name.toLowerCase()}`} /></div>)}</div>
-   <div className="panel-foot"><span>{visibleCount.toLocaleString()} pieces visible</span><Button variant="ghost" onClick={()=>setState(s=>({...s,visible:[],selected:[],isolate:false}))}>Hide all</Button></div>
-  </section>
-  {panel==='search'&&<section className="search-panel glass" aria-label="Find anatomy">
-   <div className="sheet-handle mobile-only" />
-   <div className="panel-heading"><span>Find a structure</span><Button variant="ghost" className="icon-button" onClick={()=>setPanel(null)} aria-label="Close search"><X size={18}/></Button></div>
-   <div className="search-quick-tags" style={{display:'flex',gap:5,overflowX:'auto',padding:'8px 0 2px',scrollbarWidth:'none',WebkitOverflowScrolling:'touch'}}>
-    {['Heart','Kidney','Uterus','Brain','Stomach','Femur','Ovaries','Lungs'].map(term => (
-     <Button key={term} variant="ghost" size="sm" style={{fontSize:11,height:26,padding:'0 9px',borderRadius:13,background:'#edf0f2',color:'#475569',flexShrink:0,fontWeight:500}} onClick={() => {
-       setQuery(term);
-       const match = atlas?.concepts.find(c => c.name.toLowerCase() === term.toLowerCase() || c.name.toLowerCase().includes(term.toLowerCase()));
-       if (match) choose(match);
-     }}>
-      {term}
-     </Button>
-    ))}
-   </div>
-   <Combobox<Concept> items={results} value={null} onValueChange={value=>{if(value)choose(value);}} inputValue={query} onInputValueChange={setQuery} itemToStringLabel={c=>c.name} filter={null} open onOpenChange={open=>{if(!open)setPanel(null);}}><ComboboxInput autoFocus placeholder="Heart, kidney, uterus, femur…" aria-label="Search named anatomical structures" showTrigger={false}/><ComboboxContent className="anatomy-search-results"><ComboboxEmpty>No structures match your search.</ComboboxEmpty><ComboboxList>{(c:Concept)=><ComboboxItem key={c.id} value={c}><span className="search-result-name">{c.name}</span><span className="small-number">{c.elements.length} {c.elements.length===1?'piece':'pieces'}</span></ComboboxItem>}</ComboboxList></ComboboxContent></Combobox><p className="search-note">{query?'Showing up to 80 matches. Refine your search to find smaller structures.':'Start with a major organ, or search every named structure.'}</p></section>}
-  <nav className="view-controls glass" aria-label="Camera controls">{(['three-quarter','front','side','back'] as View[]).map((v,i)=><Button variant="ghost" key={v} className={state.view===v?'active':''} aria-pressed={state.view===v} disabled={state.explode>.8&&v!=='front'} onClick={()=>setState(s=>({...s,view:v,reset:s.reset+1,rotate:false}))} title={`${v} view`} aria-label={`${v} view`}><span>{['¾','F','S','B'][i]}</span></Button>)}<i/><Button variant="ghost" disabled={state.explode>=.4} aria-label={state.rotate?'Pause rotation':'Rotate body'} title="Auto rotate" className={state.rotate?'active':''} onClick={()=>setState(s=>({...s,rotate:!s.rotate}))}>{state.rotate?<Pause size={17}/>:<RotateCw size={18}/>}</Button><Button variant="ghost" aria-label="Reset view and layers" title="Reset" onClick={reset}><RotateCcw size={17}/></Button></nav>
-  <div className="scene-caption"><span className="caption-line"/><span>{state.isolate?(chosen?.name??'SELECTED STRUCTURE'):state.explode>.95?'ANATOMICAL INVENTORY':state.explode>.05?'SEPARATED STRUCTURES':sex==='female'?'ADULT HUMAN · FEMALE (Complete Anatomy)':'ADULT HUMAN · MALE (BodyParts3D)'}</span><span className="caption-line"/></div>
-  <div className="bottom-dock glass">
-   <Button variant="ghost" className="mobile-only dock-btn dock-layers" onClick={()=>openPanel('layers')} aria-label="Open system layers"><Layers3 size={18}/><span>Systems</span></Button>
-   <div className="explode-control">
-    <div className="explode-label"><label id="explode-label"><span className="desktop-only">Explode anatomy</span><span className="mobile-only">Explode</span></label><output>{Math.round(state.explode*100)}<span>%</span></output></div>
-    <Slider aria-labelledby="explode-label" min={0} max={100} step={1} value={[state.explode*100]} onValueChange={v=>setState(s=>({...s,explode:(Array.isArray(v)?v[0]:v)/100,view:(Array.isArray(v)?v[0]:v)>80?'front':s.view,rotate:false}))}/>
-    <div className="slider-endpoints"><span>Assembled</span><span>Every piece</span></div>
-   </div>
-   <Button variant="ghost" className="dock-btn dock-slice" style={{padding:'6px 8px',display:'flex',flexDirection:'column',gap:3,fontSize:10,color:(state.crossSection??0)>0?'#0284c7':'#687683'}} onClick={()=>setState(s=>({...s,crossSection:(s.crossSection??0)>0?0:0.5}))} title="Cross-section inner slice">
-    <Scissors size={17}/>
-    <span>{(state.crossSection??0)>0?'Sliced':'Slice'}</span>
-   </Button>
-   <Button variant="ghost" className="dock-btn dock-reset" onClick={reset} aria-label="Assemble and reset"><RotateCcw size={17}/><span>Reset</span></Button>
-  </div>
-  <footer className="studio-footer"><span>{state.explode>.8?'Drag to pan':'Drag to orbit'} <b>·</b> Pinch to zoom <b>·</b> Tap to inspect</span><Button variant="ghost" onClick={()=>{setDetails(false);setPanel(null);setAbout(true);}}>Source & credits <ArrowUpRight size={12}/></Button></footer>
+   <footer className="studio-footer desktop-only"><span>{state.explode>.8?'Drag to pan':'Drag to orbit'} <b>·</b> Pinch to zoom <b>·</b> Tap to inspect</span><Button variant="ghost" onClick={()=>{setDetails(false);setPanel(null);setAbout(true);}}>Source & credits <ArrowUpRight size={12}/></Button></footer>
   {progress<100&&!error&&<div className="loading glass" role="status"><Activity size={18}/><div><strong>Preparing the anatomy</strong><span>{progress}% · Loading {atlas?.parts.length.toLocaleString()??(sex==='female'?'2,341':'2,234')} pieces</span><div className="loading-track"><i style={{width:`${progress}%`}}/></div></div></div>}
   {error&&<div className="loading glass error" role="alert"><p>{error}</p><Button variant="ghost" onClick={()=>location.reload()}>Reload viewer</Button></div>}
   <Sheet open={details&&selectedParts.length>0} modal={false} disablePointerDismissal onOpenChange={setDetails}><SheetContent initialFocus={detailTitle} className={`detail-sheet glass ${state.isolate?'is-isolated':''}`} showCloseButton={true}>
