@@ -10,13 +10,25 @@ const __dirname = dirname(__filename);
 const BASE_URL = 'https://cool-hubble.vercel.app';
 const ALIAS_URL = 'https://human.ainibot.com';
 
-// Load atlas data
-const atlasPath = resolve(__dirname, '../public/models/atlas.json');
+// Candidate paths for atlas data
+const candidatePaths = [
+  resolve(__dirname, 'atlas.json'),
+  resolve(__dirname, 'public/models/atlas.json'),
+  resolve(__dirname, '../public/models/atlas.json'),
+  '/opt/data/scripts/atlas-mcp/public/models/atlas.json',
+  '/root/.hermes/scripts/atlas-mcp/public/models/atlas.json'
+];
 let atlas;
-try {
-  atlas = JSON.parse(readFileSync(atlasPath, 'utf8'));
-} catch (err) {
-  process.stderr.write(`Failed to load atlas.json from ${atlasPath}: ${err.message}\n`);
+for (const p of candidatePaths) {
+  if (existsSync(p)) {
+    try {
+      atlas = JSON.parse(readFileSync(p, 'utf8'));
+      break;
+    } catch {}
+  }
+}
+if (!atlas) {
+  process.stderr.write(`Failed to load atlas.json from candidate paths: ${candidatePaths.join(', ')}\n`);
   process.exit(1);
 }
 
@@ -253,6 +265,18 @@ function handleRequest(req) {
     }
 
     return { jsonrpc: '2.0', id, error: { code: -32601, message: `Tool not found: ${name}` } };
+  }
+
+  if (method === 'ping') {
+    return { jsonrpc: '2.0', id, result: {} };
+  }
+
+  if (method && method.startsWith('notifications/')) {
+    return null;
+  }
+
+  if (id === undefined) {
+    return null;
   }
 
   return { jsonrpc: '2.0', id, error: { code: -32601, message: `Method not supported: ${method}` } };

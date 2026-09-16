@@ -34,3 +34,65 @@ export const EXPLANATIONS:Record<string,string> = {
  'diaphragm':'A broad muscle separating the chest and abdomen. When it contracts, it increases chest volume and helps draw air into the lungs.',
 };
 export function explanation(name:string,system:SystemId){return EXPLANATIONS[name.toLowerCase()] ?? SYSTEMS.find(s=>s.id===system)?.description ?? '';}
+
+export function getPartColor(p: Part): string {
+ const name = p.name.toLowerCase();
+ // Heart valves -> pearly fibrous ivory/white
+ if (name.includes('valve') || name.includes('cusp') || name.includes('leaflet')) return '#f1f5f9';
+ // Epicardial fat / coronary sulcus adipose
+ if (name.includes('fat') || name.includes('sulcus') || name.includes('adipose')) return '#d97706';
+ // Pulmonary trunk / Pulmonary arteries / Vena cava / Cardiac veins / Sinuses -> deoxygenated venous blue
+ if (name.includes('pulmonary trunk') || name.includes('pulmonary artery') || name.includes('vena cava') || name.includes('cardiac vein') || name.includes('coronary sinus') || name.includes('marginal vein') || p.system === 'venous') return '#2563eb';
+ // Aorta / Coronary arteries / Arterial system -> oxygenated bright red
+ if (name.includes('aorta') || name.includes('coronary artery') || name.includes('interventricular branch') || name.includes('conus artery') || p.system === 'arterial') return '#dc2626';
+ // Heart muscle, ventricles, atria, papillary muscles, myocardium -> deep crimson red
+ if (p.system === 'cardiac' || name.includes('ventricle') || name.includes('atrium') || name.includes('papillary') || name.includes('myocardium')) return '#991b1b';
+ // Digestive organs
+ if (p.system === 'digestive') {
+  if (name.includes('liver')) return '#78350f';
+  if (name.includes('gallbladder')) return '#15803d';
+  if (name.includes('stomach')) return '#b8916b';
+  if (name.includes('pancreas')) return '#fde047';
+  if (name.includes('esophagus')) return '#f43f5e';
+  return '#b8916b';
+ }
+ // Urinary organs
+ if (p.system === 'urinary') {
+  if (name.includes('kidney')) return '#9a3412';
+  if (name.includes('bladder')) return '#eab308';
+  return '#b47961';
+ }
+ // Lymphatic
+ if (p.system === 'lymphatic') {
+  if (name.includes('spleen')) return '#581c87';
+  return '#879f7c';
+ }
+ // Respiratory
+ if (p.system === 'respiratory') {
+  if (name.includes('trachea') || name.includes('bronch') || name.includes('cartilage')) return '#cbd5e1';
+  return '#f472b6';
+ }
+ // Nervous system
+ if (p.system === 'nervous') {
+  if (name.includes('brain') || name.includes('cerebr') || name.includes('cerebell')) return '#fed7aa';
+  return '#eab308';
+ }
+ // Skeletal system
+ if (p.system === 'skeletal') {
+  if (name.includes('cartilage')) return '#bae6fd';
+  return '#e2d9ba';
+ }
+ // Muscular system
+ if (p.system === 'muscular') {
+  if (name.includes('tendon') || name.includes('aponeurosis')) return '#f1f5f9';
+  return '#a85b50';
+ }
+ // Connective
+ if (p.system === 'connective') return '#aec3bb';
+ // Sensory
+ if (p.system === 'sensory') {
+  if (name.includes('cornea') || name.includes('lens')) return '#e0f2fe';
+  return '#b0c8ce';
+ }
+ return SYSTEMS.find(s => s.id === p.system)?.color ?? '#aebbb8';
+}
