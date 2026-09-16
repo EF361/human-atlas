@@ -26,7 +26,7 @@ export default function Home(){
 
  useEffect(()=>{
   const abort=new AbortController();setProgress(0);setError('');setAtlas(null);setChosen(null);setDetails(false);
-  setState(s=>({...initial,visible:sex==='female'?[...DEFAULT_VISIBLE,'integumentary']:DEFAULT_VISIBLE,reset:s.reset+1}));
+  setState(s=>({...initial,visible:DEFAULT_VISIBLE,reset:s.reset+1}));
   const modelUrl=sex==='female'?'/models/atlas-female.json':'/models/atlas.json';
   fetch(modelUrl,{signal:abort.signal}).then(r=>{if(!r.ok)throw new Error('The anatomy catalogue could not be loaded.');return r.json();}).then(data=>{
    const loadedAtlas=data as Atlas;setAtlas(loadedAtlas);
@@ -62,7 +62,7 @@ export default function Home(){
  useEffect(()=>{if(!atlas)return;return registerAtlasTools(atlas,c=>flushSync(()=>choose(c)));},[atlas]);
  const choosePart=(id:string)=>{const p=parts.get(id);if(!p)return;setChosen({id:p.conceptId,name:p.name,elements:[id]});setState(s=>({...s,selected:[id],isolate:false,rotate:false}));setDetails(true);setPanel(null);};
  const toggle=(id:SystemId)=>{setDetails(false);setState(s=>({...s,selected:[],isolate:false,visible:s.visible.includes(id)?s.visible.filter(x=>x!==id):[...s.visible,id]}));};
- const reset=()=>{setState(s=>({...initial,visible:sex==='female'?[...DEFAULT_VISIBLE,'integumentary']:DEFAULT_VISIBLE,reset:s.reset+1}));setChosen(null);setDetails(false);setPanel(null);};
+ const reset=()=>{setState(s=>({...initial,visible:DEFAULT_VISIBLE,reset:s.reset+1}));setChosen(null);setDetails(false);setPanel(null);};
  const openPanel=(next:'layers'|'search')=>{setDetails(false);setPanel(p=>p===next?null:next);};
 
  const isHeart=chosen?.name.toLowerCase().includes('heart')||system?.id==='cardiac'||chosen?.name.toLowerCase().includes('ventricle')||chosen?.name.toLowerCase().includes('atrium');
@@ -74,7 +74,7 @@ export default function Home(){
   <header className="identity">
    <div className="eyebrow"><span className="status-dot"/> INTERACTIVE ANATOMY</div>
    <h1>Human Atlas<Badge variant="outline" className="edition">3D</Badge></h1>
-   <div className="identity-meta">{atlas?atlas.parts.length.toLocaleString():sex==='female'?'888':'2,234'} modeled pieces <span>·</span> {sex==='female'?'HuBMAP HRA Female':'BodyParts3D Male'}</div>
+   <div className="identity-meta">{atlas?atlas.parts.length.toLocaleString():sex==='female'?'2,341':'2,234'} modeled pieces <span>·</span> {sex==='female'?'Adult Female Anatomy':'Adult Male Anatomy'}</div>
    <div style={{marginTop:10,display:'flex',gap:4,background:'#edf0f2',padding:'3px 4px',borderRadius:8,width:'fit-content',pointerEvents:'auto'}}>
     <Button variant="ghost" size="sm" style={{fontSize:11,height:26,padding:'0 10px',borderRadius:6,background:sex==='male'?'#263b48':'transparent',color:sex==='male'?'#ffffff':'#5a6875',fontWeight:sex==='male'?600:400}} onClick={()=>setSex('male')}>
      Male ♂
@@ -98,7 +98,7 @@ export default function Home(){
   </section>
   {panel==='search'&&<section className="search-panel glass" aria-label="Find anatomy"><div className="panel-heading"><span>Find a structure</span><Button variant="ghost" className="icon-button" onClick={()=>setPanel(null)} aria-label="Close search"><X size={18}/></Button></div><Combobox<Concept> items={results} value={null} onValueChange={value=>{if(value)choose(value);}} inputValue={query} onInputValueChange={setQuery} itemToStringLabel={c=>c.name} filter={null} open onOpenChange={open=>{if(!open)setPanel(null);}}><ComboboxInput autoFocus placeholder="Heart, kidney, uterus, femur…" aria-label="Search named anatomical structures" showTrigger={false}/><ComboboxContent className="anatomy-search-results"><ComboboxEmpty>No structures match your search.</ComboboxEmpty><ComboboxList>{(c:Concept)=><ComboboxItem key={c.id} value={c}><span className="search-result-name">{c.name}</span><span className="small-number">{c.elements.length} {c.elements.length===1?'piece':'pieces'}</span></ComboboxItem>}</ComboboxList></ComboboxContent></Combobox><p className="search-note">{query?'Showing up to 80 matches. Refine your search to find smaller structures.':'Start with a major organ, or search every named structure.'}</p></section>}
   <nav className="view-controls glass" aria-label="Camera controls">{(['three-quarter','front','side','back'] as View[]).map((v,i)=><Button variant="ghost" key={v} className={state.view===v?'active':''} aria-pressed={state.view===v} disabled={state.explode>.8&&v!=='front'} onClick={()=>setState(s=>({...s,view:v,reset:s.reset+1,rotate:false}))} title={`${v} view`} aria-label={`${v} view`}><span>{['¾','F','S','B'][i]}</span></Button>)}<i/><Button variant="ghost" disabled={state.explode>=.4} aria-label={state.rotate?'Pause rotation':'Rotate body'} title="Auto rotate" className={state.rotate?'active':''} onClick={()=>setState(s=>({...s,rotate:!s.rotate}))}>{state.rotate?<Pause size={17}/>:<RotateCw size={18}/>}</Button><Button variant="ghost" aria-label="Reset view and layers" title="Reset" onClick={reset}><RotateCcw size={17}/></Button></nav>
-  <div className="scene-caption"><span className="caption-line"/><span>{state.isolate?(chosen?.name??'SELECTED STRUCTURE'):state.explode>.95?'ANATOMICAL INVENTORY':state.explode>.05?'SEPARATED STRUCTURES':sex==='female'?'ADULT HUMAN · FEMALE (HuBMAP HRA)':'ADULT HUMAN · MALE (BodyParts3D)'}</span><span className="caption-line"/></div>
+  <div className="scene-caption"><span className="caption-line"/><span>{state.isolate?(chosen?.name??'SELECTED STRUCTURE'):state.explode>.95?'ANATOMICAL INVENTORY':state.explode>.05?'SEPARATED STRUCTURES':sex==='female'?'ADULT HUMAN · FEMALE (Complete Anatomy)':'ADULT HUMAN · MALE (BodyParts3D)'}</span><span className="caption-line"/></div>
   <div className="bottom-dock glass">
    <Button variant="ghost" className="mobile-only dock-layers" onClick={()=>openPanel('layers')} aria-label="Open system layers"><Layers3 size={20}/><span>Systems</span></Button>
    <div className="explode-control">
@@ -113,7 +113,7 @@ export default function Home(){
    <Button variant="ghost" className="dock-reset" onClick={reset} aria-label="Assemble and reset"><RotateCcw size={18}/><span>Reset</span></Button>
   </div>
   <footer className="studio-footer"><span>{state.explode>.8?'Drag to pan':'Drag to orbit'} <b>·</b> Pinch to zoom <b>·</b> Tap to inspect</span><Button variant="ghost" onClick={()=>{setDetails(false);setPanel(null);setAbout(true);}}>Source & credits <ArrowUpRight size={12}/></Button></footer>
-  {progress<100&&!error&&<div className="loading glass" role="status"><Activity size={18}/><div><strong>Preparing the anatomy</strong><span>{progress}% · Loading {atlas?.parts.length.toLocaleString()??(sex==='female'?'888':'2,234')} pieces</span><div className="loading-track"><i style={{width:`${progress}%`}}/></div></div></div>}
+  {progress<100&&!error&&<div className="loading glass" role="status"><Activity size={18}/><div><strong>Preparing the anatomy</strong><span>{progress}% · Loading {atlas?.parts.length.toLocaleString()??(sex==='female'?'2,341':'2,234')} pieces</span><div className="loading-track"><i style={{width:`${progress}%`}}/></div></div></div>}
   {error&&<div className="loading glass error" role="alert"><p>{error}</p><Button variant="ghost" onClick={()=>location.reload()}>Reload viewer</Button></div>}
   <Sheet open={details&&selectedParts.length>0} modal={false} disablePointerDismissal onOpenChange={setDetails}><SheetContent initialFocus={detailTitle} className={`detail-sheet glass ${state.isolate?'is-isolated':''}`} showCloseButton={true}><div className="detail-header"><div className="detail-accent" style={{background:system?.color}}/><div className="eyebrow">{system?.name??'ANATOMY'}</div><SheetTitle ref={detailTitle} tabIndex={-1} className="structure-title">{chosen?.name}</SheetTitle></div>
   <div className="detail-scroll" key={`${chosen?.id}-${state.isolate}`}>
@@ -146,11 +146,11 @@ export default function Home(){
    </div>}
    <Button variant="ghost" className="secondary-action" onClick={()=>{setState(s=>({...s,selected:[],isolate:false,crossSection:0}));setDetails(false);}}>Clear selection</Button>
   </div></SheetContent></Sheet>
-  <Sheet open={about} onOpenChange={setAbout}><SheetContent className="about-sheet glass"><div className="eyebrow">SOURCE & SCOPE</div><SheetTitle className="structure-title">A body, revealed.</SheetTitle><SheetDescription>Explore anatomy across two independent reference collections: Adult Male (BodyParts3D) and Adult Female (HuBMAP Human Reference Atlas).</SheetDescription><div className="about-copy">
+  <Sheet open={about} onOpenChange={setAbout}><SheetContent className="about-sheet glass"><div className="eyebrow">SOURCE & SCOPE</div><SheetTitle className="structure-title">A body, revealed.</SheetTitle><SheetDescription>Explore anatomy across two reference collections: Complete Adult Male (BodyParts3D) and Complete Adult Female (BodyParts3D + HuBMAP Human Reference Atlas).</SheetDescription><div className="about-copy">
    <p><strong>Male · BodyParts3D 4.0</strong><br/>2,234 individual meshes and 3,432 named concepts from an adult male reference anatomy, including complete skeletal, muscular, neurovascular, visceral, and male reproductive anatomy.</p>
-   <p><strong>Female · Human Reference Atlas / HuBMAP</strong><br/>888 source meshes representing whole-body surface, internal viscera, deep renal microstructure (cortex, pyramids, papillae, calyces, pelvis), and complete female reproductive anatomy (ovaries, fallopian tubes, uterus, cervix, vagina).</p>
+   <p><strong>Female · Complete Reference Anatomy</strong><br/>2,341 modeled meshes representing a complete adult female body system: full skeleton (296 bones), full muscular system (402 muscles), cardiovascular, nervous, digestive with stomach, respiratory, urinary with deep renal microstructures, and complete female reproductive anatomy (ovaries, fallopian tubes, uterus, cervix, vagina, and mammary glands).</p>
    <p>Colors and system groupings are designed for interactive 3D exploration. Use the <strong>Slice (Cross-Section)</strong> tool to peer inside enclosed organs like the heart and kidneys.</p>
-   <h3>Female reference collection</h3><p>Kristen Browne and Heidi Schlehlein, Human Reference Atlas / HuBMAP, 3D Reference Organ Set for Female v1.5 (2023). CC BY 4.0. Geometry adapted for this viewer.</p><a href="https://doi.org/10.48539/HBM352.BTSQ.586" target="_blank" rel="noreferrer">HuBMAP Reference Portal <ArrowUpRight size={14}/></a>
+   <h3>Female reference collection</h3><p>Human Reference Atlas / HuBMAP (3D Reference Organ Set v1.5) & BodyParts3D. CC BY 4.0. Geometry adapted and aligned for this viewer.</p><a href="https://doi.org/10.48539/HBM352.BTSQ.586" target="_blank" rel="noreferrer">HuBMAP Reference Portal <ArrowUpRight size={14}/></a>
    <h3>Male reference collection</h3><p>BodyParts3D, © The Database Center for Life Science licensed under CC Attribution 4.0 International.</p><a href="https://dbarchive.biosciencedbc.jp/en/bodyparts3d/lic.html" target="_blank" rel="noreferrer">Dataset license <ArrowUpRight size={14}/></a><a href="https://dbarchive.biosciencedbc.jp/en/bodyparts3d/download.html" target="_blank" rel="noreferrer">BodyParts3D Archive <ArrowUpRight size={14}/></a>
   </div></SheetContent></Sheet>
  </main>;

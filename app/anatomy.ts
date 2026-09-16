@@ -107,6 +107,10 @@ export function getPartColor(p: Part): string {
   return '#bda098';
  }
 
+ // Breast / Mammary anatomy
+ if (name.includes('mammary') || name.includes('breast')) return '#fbcfe8'; // mammary gland tissue: soft rose pink
+ if (name.includes('nipple') || name.includes('areola')) return '#e11d48'; // areola / nipple complex: deep rose red
+
  // Pregnancy reference
  if (p.system === 'pregnancy') return '#b88380';
 
