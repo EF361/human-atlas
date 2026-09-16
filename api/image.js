@@ -33,7 +33,22 @@ export default function handler(req, res) {
     bladder: '/images/anatomy/bladder.png',
     aorta: '/images/anatomy/aorta.png',
     muscle: '/images/anatomy/muscular.png',
-    muscles: '/images/anatomy/muscular.png'
+    muscles: '/images/anatomy/muscular.png',
+    uterus: '/images/anatomy/uterus.png',
+    ovary: '/images/anatomy/ovary.png',
+    ovaries: '/images/anatomy/ovary.png',
+    vagina: '/images/anatomy/uterus.png',
+    cervix: '/images/anatomy/uterus.png',
+    fallopian: '/images/anatomy/ovary.png',
+    prostate: '/images/anatomy/prostate.png',
+    testis: '/images/anatomy/testis.png',
+    testicle: '/images/anatomy/testis.png',
+    penis: '/images/anatomy/reproductive.png',
+    reproductive: '/images/anatomy/reproductive.png',
+    'heart interior': '/images/anatomy/heart-interior.png',
+    'kidney interior': '/images/anatomy/kidney-interior.png',
+    'renal medulla': '/images/anatomy/kidney-interior.png',
+    'renal pyramid': '/images/anatomy/kidney-interior.png'
   };
 
   const match = Object.keys(STATIC_MAP).find(k => q.includes(k));

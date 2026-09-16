@@ -32,6 +32,23 @@ if (!atlas) {
   process.exit(1);
 }
 
+const femaleCandidatePaths = [
+  resolve(__dirname, 'atlas-female.json'),
+  resolve(__dirname, 'public/models/atlas-female.json'),
+  resolve(__dirname, '../public/models/atlas-female.json'),
+  '/opt/data/scripts/atlas-mcp/public/models/atlas-female.json',
+  '/root/.hermes/scripts/atlas-mcp/public/models/atlas-female.json'
+];
+let atlasFemale = null;
+for (const p of femaleCandidatePaths) {
+  if (existsSync(p)) {
+    try {
+      atlasFemale = JSON.parse(readFileSync(p, 'utf8'));
+      break;
+    } catch {}
+  }
+}
+
 const SYSTEMS = [
   { id: 'skeletal', name: 'Skeleton', color: '#e2d9ba', imageUrl: `${BASE_URL}/images/systems/skeletal.svg`, description: 'Bones form the supporting framework of the body, protect organs, and provide attachment points for muscles.' },
   { id: 'muscular', name: 'Muscles', color: '#a85b50', imageUrl: `${BASE_URL}/images/systems/muscular.svg`, description: 'Skeletal muscles generate movement by pulling on their attachments.' },
@@ -54,6 +71,7 @@ const STATIC_ANATOMY_IMAGES = {
   heart: '/images/anatomy/heart.png',
   cardiac: '/images/anatomy/heart.png',
   fma7088: '/images/anatomy/heart.png',
+  'heart interior': '/images/anatomy/heart-interior.png',
   brain: '/images/anatomy/brain.png',
   fma9688: '/images/anatomy/brain.png',
   cerebrum: '/images/anatomy/brain.png',
@@ -66,6 +84,19 @@ const STATIC_ANATOMY_IMAGES = {
   fma7203: '/images/anatomy/stomach.png',
   kidney: '/images/anatomy/kidney.png',
   kidneys: '/images/anatomy/kidney.png',
+  'kidney interior': '/images/anatomy/kidney-interior.png',
+  'renal medulla': '/images/anatomy/kidney-interior.png',
+  'renal pyramid': '/images/anatomy/kidney-interior.png',
+  uterus: '/images/anatomy/uterus.png',
+  ovary: '/images/anatomy/ovary.png',
+  ovaries: '/images/anatomy/ovary.png',
+  vagina: '/images/anatomy/uterus.png',
+  cervix: '/images/anatomy/uterus.png',
+  prostate: '/images/anatomy/prostate.png',
+  testis: '/images/anatomy/testis.png',
+  testicle: '/images/anatomy/testis.png',
+  penis: '/images/anatomy/reproductive.png',
+  reproductive: '/images/anatomy/reproductive.png',
   skeleton: '/images/anatomy/skeleton.png',
   skull: '/images/anatomy/skull.png',
   spine: '/images/anatomy/spine.png',
@@ -170,31 +201,42 @@ function handleRequest(req) {
         return { jsonrpc: '2.0', id, error: { code: -32602, message: 'query parameter is required' } };
       }
 
-      // Find concept
-      const concept = atlas.concepts.find(c => c.name.toLowerCase() === q || c.id.toLowerCase() === q)
+      // Find concept in male atlas, then female atlas
+      let concept = atlas.concepts.find(c => c.name.toLowerCase() === q || c.id.toLowerCase() === q)
         || atlas.concepts.find(c => c.name.toLowerCase().includes(q));
+      let isFemale = false;
+      if (!concept && atlasFemale) {
+        concept = atlasFemale.concepts.find(c => c.name.toLowerCase() === q || c.id.toLowerCase() === q)
+          || atlasFemale.concepts.find(c => c.name.toLowerCase().includes(q));
+        if (concept) isFemale = true;
+      }
 
+      const activeAtlas = isFemale ? atlasFemale : atlas;
       const structureName = concept ? concept.name : q;
       const conceptId = concept ? concept.id : 'CUSTOM';
       const pieceCount = concept ? concept.elements.length : 1;
-      const parts = concept ? atlas.parts.filter(p => concept.elements.includes(p.id)) : [];
+      const parts = concept ? activeAtlas.parts.filter(p => concept.elements.includes(p.id)) : [];
       const system = parts[0]?.system || 'general';
 
       const imageUrl = resolveVisual(structureName, conceptId);
-      const viewerUrl = `${BASE_URL}/?id=${encodeURIComponent(conceptId)}&isolate=true`;
-      const displayName = structureName.charAt(0).toUpperCase() + structureName.slice(1);
+      const isSlice = q.includes('interior') || q.includes('inside') || q.includes('cross section') || q.includes('slice');
+      let viewerUrl = `${BASE_URL}/?id=${encodeURIComponent(conceptId)}&isolate=true`;
+      if (isFemale) viewerUrl += '&sex=female';
+      if (isSlice) viewerUrl += '&slice=1';
 
+      const displayName = structureName.charAt(0).toUpperCase() + structureName.slice(1);
       const markdown = `![${displayName}](${imageUrl})\n\n[🔍 **Explore ${displayName} in 3D Interactive Atlas**](${viewerUrl})`;
 
       const result = {
         name: displayName,
         id: conceptId,
         system,
+        sex: isFemale ? 'female' : 'male',
         pieceCount,
         imageUrl,
         viewerUrl,
         markdown,
-        description: `3D model of ${displayName} containing ${pieceCount} anatomical parts in the ${system} system.`
+        description: `3D model of ${displayName} containing ${pieceCount} anatomical parts in the ${system} system (${isFemale ? 'HuBMAP HRA Female' : 'BodyParts3D Male'}).`
       };
 
       return {
@@ -211,14 +253,34 @@ function handleRequest(req) {
       }
       const matches = atlas.concepts
         .filter(c => c.name.toLowerCase().includes(q) || c.id.toLowerCase().includes(q))
-        .slice(0, 30)
+        .slice(0, 20)
         .map(c => ({
           id: c.id,
           name: c.name,
+          sex: 'male',
           pieces: c.elements.length,
           imageUrl: resolveVisual(c.name, c.id),
           viewerUrl: `${BASE_URL}/?id=${c.id}&isolate=true`
         }));
+
+      if (atlasFemale) {
+        const femaleMatches = atlasFemale.concepts
+          .filter(c => c.name.toLowerCase().includes(q) || c.id.toLowerCase().includes(q))
+          .slice(0, 15)
+          .map(c => ({
+            id: c.id,
+            name: c.name,
+            sex: 'female',
+            pieces: c.elements.length,
+            imageUrl: resolveVisual(c.name, c.id),
+            viewerUrl: `${BASE_URL}/?id=${c.id}&sex=female&isolate=true`
+          }));
+        for (const fm of femaleMatches) {
+          if (!matches.some(m => m.id === fm.id || m.name.toLowerCase() === fm.name.toLowerCase())) {
+            matches.push(fm);
+          }
+        }
+      }
 
       return {
         jsonrpc: '2.0',
@@ -229,7 +291,12 @@ function handleRequest(req) {
 
     if (name === 'get_structure_details') {
       const conceptId = args?.id;
-      const concept = atlas.concepts.find(c => c.id === conceptId);
+      let concept = atlas.concepts.find(c => c.id === conceptId);
+      let isFemale = false;
+      if (!concept && atlasFemale) {
+        concept = atlasFemale.concepts.find(c => c.id === conceptId);
+        if (concept) isFemale = true;
+      }
       if (!concept) {
         return {
           jsonrpc: '2.0',
@@ -238,10 +305,11 @@ function handleRequest(req) {
         };
       }
 
-      const parts = atlas.parts.filter(p => concept.elements.includes(p.id));
+      const activeAtlas = isFemale ? atlasFemale : atlas;
+      const parts = activeAtlas.parts.filter(p => concept.elements.includes(p.id));
       const system = parts[0]?.system || 'unknown';
       const imageUrl = resolveVisual(concept.name, concept.id);
-      const viewerUrl = `${BASE_URL}/?id=${concept.id}&isolate=true`;
+      const viewerUrl = `${BASE_URL}/?id=${concept.id}&isolate=true${isFemale ? '&sex=female' : ''}`;
 
       return {
         jsonrpc: '2.0',
