@@ -75,7 +75,7 @@ export default function Home(){
    <div className="eyebrow"><span className="status-dot"/> INTERACTIVE ANATOMY</div>
    <h1>Human Atlas<Badge variant="outline" className="edition">3D</Badge></h1>
    <div className="identity-meta">{atlas?atlas.parts.length.toLocaleString():sex==='female'?'2,341':'2,234'} modeled pieces <span>·</span> {sex==='female'?'Adult Female Anatomy':'Adult Male Anatomy'}</div>
-   <div style={{marginTop:10,display:'flex',gap:4,background:'#edf0f2',padding:'3px 4px',borderRadius:8,width:'fit-content',pointerEvents:'auto'}}>
+   <div className="sex-switcher" style={{marginTop:10,display:'flex',gap:4,background:'#edf0f2',padding:'3px 4px',borderRadius:8,width:'fit-content',pointerEvents:'auto'}}>
     <Button variant="ghost" size="sm" style={{fontSize:11,height:26,padding:'0 10px',borderRadius:6,background:sex==='male'?'#263b48':'transparent',color:sex==='male'?'#ffffff':'#5a6875',fontWeight:sex==='male'?600:400}} onClick={()=>setSex('male')}>
      Male ♂
     </Button>
@@ -85,7 +85,9 @@ export default function Home(){
    </div>
   </header>
   <nav className="top-actions" aria-label="Explorer panels"><Button variant="ghost" className={panel==='search'?'active':''} onClick={()=>openPanel('search')} aria-label="Search anatomy"><Search size={18}/><span>Find a structure</span><kbd>/</kbd></Button><Button variant="ghost" className="icon-button" aria-label="About this atlas" onClick={()=>{setDetails(false);setPanel(null);setAbout(true);}}><Info size={18}/></Button></nav>
+  {panel&&<div className="mobile-backdrop mobile-only" onClick={()=>setPanel(null)} aria-hidden="true"/>}
   <section className={`layers-panel glass ${panel==='layers'?'mobile-open':''}`} aria-label="Anatomical layers">
+   <div className="sheet-handle mobile-only" />
    <div className="panel-heading"><span>Systems</span><Button variant="ghost" className="mobile-only icon-button" onClick={()=>setPanel(null)} aria-label="Close systems"><X size={18}/></Button><Badge variant="secondary" className="desktop-only small-number">{activeSystems.length}</Badge></div>
    <div className="layer-presets">
     <Button variant="ghost" aria-pressed={activeSystems.every(x=>state.visible.includes(x.id))} onClick={()=>setState(s=>({...s,selected:[],isolate:false,visible:activeSystems.map(x=>x.id).filter(x=>x!=='pregnancy')}))}>All</Button>
@@ -96,35 +98,51 @@ export default function Home(){
    <div className="system-list">{activeSystems.map(s=><div className={`system-row ${state.visible.includes(s.id)?'enabled':''}`} key={s.id}><Button variant="ghost" className="system-name" title={`Show only ${s.name.toLowerCase()}`} onClick={()=>setState(v=>({...v,visible:[s.id],isolate:false,selected:[]}))}><span className="system-dot" style={{background:s.color}}/>{s.name}<span className="system-count">{counts[s.id]}</span></Button><Switch checked={state.visible.includes(s.id)} onCheckedChange={()=>toggle(s.id)} aria-label={`Show ${s.name.toLowerCase()}`} /></div>)}</div>
    <div className="panel-foot"><span>{visibleCount.toLocaleString()} pieces visible</span><Button variant="ghost" onClick={()=>setState(s=>({...s,visible:[],selected:[],isolate:false}))}>Hide all</Button></div>
   </section>
-  {panel==='search'&&<section className="search-panel glass" aria-label="Find anatomy"><div className="panel-heading"><span>Find a structure</span><Button variant="ghost" className="icon-button" onClick={()=>setPanel(null)} aria-label="Close search"><X size={18}/></Button></div><Combobox<Concept> items={results} value={null} onValueChange={value=>{if(value)choose(value);}} inputValue={query} onInputValueChange={setQuery} itemToStringLabel={c=>c.name} filter={null} open onOpenChange={open=>{if(!open)setPanel(null);}}><ComboboxInput autoFocus placeholder="Heart, kidney, uterus, femur…" aria-label="Search named anatomical structures" showTrigger={false}/><ComboboxContent className="anatomy-search-results"><ComboboxEmpty>No structures match your search.</ComboboxEmpty><ComboboxList>{(c:Concept)=><ComboboxItem key={c.id} value={c}><span className="search-result-name">{c.name}</span><span className="small-number">{c.elements.length} {c.elements.length===1?'piece':'pieces'}</span></ComboboxItem>}</ComboboxList></ComboboxContent></Combobox><p className="search-note">{query?'Showing up to 80 matches. Refine your search to find smaller structures.':'Start with a major organ, or search every named structure.'}</p></section>}
+  {panel==='search'&&<section className="search-panel glass" aria-label="Find anatomy">
+   <div className="sheet-handle mobile-only" />
+   <div className="panel-heading"><span>Find a structure</span><Button variant="ghost" className="icon-button" onClick={()=>setPanel(null)} aria-label="Close search"><X size={18}/></Button></div>
+   <div className="search-quick-tags" style={{display:'flex',gap:5,overflowX:'auto',padding:'8px 0 2px',scrollbarWidth:'none',WebkitOverflowScrolling:'touch'}}>
+    {['Heart','Kidney','Uterus','Brain','Stomach','Femur','Ovaries','Lungs'].map(term => (
+     <Button key={term} variant="ghost" size="sm" style={{fontSize:11,height:26,padding:'0 9px',borderRadius:13,background:'#edf0f2',color:'#475569',flexShrink:0,fontWeight:500}} onClick={() => {
+       setQuery(term);
+       const match = atlas?.concepts.find(c => c.name.toLowerCase() === term.toLowerCase() || c.name.toLowerCase().includes(term.toLowerCase()));
+       if (match) choose(match);
+     }}>
+      {term}
+     </Button>
+    ))}
+   </div>
+   <Combobox<Concept> items={results} value={null} onValueChange={value=>{if(value)choose(value);}} inputValue={query} onInputValueChange={setQuery} itemToStringLabel={c=>c.name} filter={null} open onOpenChange={open=>{if(!open)setPanel(null);}}><ComboboxInput autoFocus placeholder="Heart, kidney, uterus, femur…" aria-label="Search named anatomical structures" showTrigger={false}/><ComboboxContent className="anatomy-search-results"><ComboboxEmpty>No structures match your search.</ComboboxEmpty><ComboboxList>{(c:Concept)=><ComboboxItem key={c.id} value={c}><span className="search-result-name">{c.name}</span><span className="small-number">{c.elements.length} {c.elements.length===1?'piece':'pieces'}</span></ComboboxItem>}</ComboboxList></ComboboxContent></Combobox><p className="search-note">{query?'Showing up to 80 matches. Refine your search to find smaller structures.':'Start with a major organ, or search every named structure.'}</p></section>}
   <nav className="view-controls glass" aria-label="Camera controls">{(['three-quarter','front','side','back'] as View[]).map((v,i)=><Button variant="ghost" key={v} className={state.view===v?'active':''} aria-pressed={state.view===v} disabled={state.explode>.8&&v!=='front'} onClick={()=>setState(s=>({...s,view:v,reset:s.reset+1,rotate:false}))} title={`${v} view`} aria-label={`${v} view`}><span>{['¾','F','S','B'][i]}</span></Button>)}<i/><Button variant="ghost" disabled={state.explode>=.4} aria-label={state.rotate?'Pause rotation':'Rotate body'} title="Auto rotate" className={state.rotate?'active':''} onClick={()=>setState(s=>({...s,rotate:!s.rotate}))}>{state.rotate?<Pause size={17}/>:<RotateCw size={18}/>}</Button><Button variant="ghost" aria-label="Reset view and layers" title="Reset" onClick={reset}><RotateCcw size={17}/></Button></nav>
   <div className="scene-caption"><span className="caption-line"/><span>{state.isolate?(chosen?.name??'SELECTED STRUCTURE'):state.explode>.95?'ANATOMICAL INVENTORY':state.explode>.05?'SEPARATED STRUCTURES':sex==='female'?'ADULT HUMAN · FEMALE (Complete Anatomy)':'ADULT HUMAN · MALE (BodyParts3D)'}</span><span className="caption-line"/></div>
   <div className="bottom-dock glass">
-   <Button variant="ghost" className="mobile-only dock-layers" onClick={()=>openPanel('layers')} aria-label="Open system layers"><Layers3 size={20}/><span>Systems</span></Button>
+   <Button variant="ghost" className="mobile-only dock-btn dock-layers" onClick={()=>openPanel('layers')} aria-label="Open system layers"><Layers3 size={18}/><span>Systems</span></Button>
    <div className="explode-control">
-    <div className="explode-label"><label id="explode-label">Explode anatomy</label><output>{Math.round(state.explode*100)}<span>%</span></output></div>
+    <div className="explode-label"><label id="explode-label"><span className="desktop-only">Explode anatomy</span><span className="mobile-only">Explode</span></label><output>{Math.round(state.explode*100)}<span>%</span></output></div>
     <Slider aria-labelledby="explode-label" min={0} max={100} step={1} value={[state.explode*100]} onValueChange={v=>setState(s=>({...s,explode:(Array.isArray(v)?v[0]:v)/100,view:(Array.isArray(v)?v[0]:v)>80?'front':s.view,rotate:false}))}/>
     <div className="slider-endpoints"><span>Assembled</span><span>Every piece</span></div>
    </div>
-   <Button variant="ghost" style={{padding:'8px 10px',display:'flex',flexDirection:'column',gap:4,fontSize:10,color:(state.crossSection??0)>0?'#0284c7':'#687683'}} onClick={()=>setState(s=>({...s,crossSection:(s.crossSection??0)>0?0:0.5}))} title="Cross-section inner slice">
-    <Scissors size={18}/>
+   <Button variant="ghost" className="dock-btn dock-slice" style={{padding:'6px 8px',display:'flex',flexDirection:'column',gap:3,fontSize:10,color:(state.crossSection??0)>0?'#0284c7':'#687683'}} onClick={()=>setState(s=>({...s,crossSection:(s.crossSection??0)>0?0:0.5}))} title="Cross-section inner slice">
+    <Scissors size={17}/>
     <span>{(state.crossSection??0)>0?'Sliced':'Slice'}</span>
    </Button>
-   <Button variant="ghost" className="dock-reset" onClick={reset} aria-label="Assemble and reset"><RotateCcw size={18}/><span>Reset</span></Button>
+   <Button variant="ghost" className="dock-btn dock-reset" onClick={reset} aria-label="Assemble and reset"><RotateCcw size={17}/><span>Reset</span></Button>
   </div>
   <footer className="studio-footer"><span>{state.explode>.8?'Drag to pan':'Drag to orbit'} <b>·</b> Pinch to zoom <b>·</b> Tap to inspect</span><Button variant="ghost" onClick={()=>{setDetails(false);setPanel(null);setAbout(true);}}>Source & credits <ArrowUpRight size={12}/></Button></footer>
   {progress<100&&!error&&<div className="loading glass" role="status"><Activity size={18}/><div><strong>Preparing the anatomy</strong><span>{progress}% · Loading {atlas?.parts.length.toLocaleString()??(sex==='female'?'2,341':'2,234')} pieces</span><div className="loading-track"><i style={{width:`${progress}%`}}/></div></div></div>}
   {error&&<div className="loading glass error" role="alert"><p>{error}</p><Button variant="ghost" onClick={()=>location.reload()}>Reload viewer</Button></div>}
-  <Sheet open={details&&selectedParts.length>0} modal={false} disablePointerDismissal onOpenChange={setDetails}><SheetContent initialFocus={detailTitle} className={`detail-sheet glass ${state.isolate?'is-isolated':''}`} showCloseButton={true}><div className="detail-header"><div className="detail-accent" style={{background:system?.color}}/><div className="eyebrow">{system?.name??'ANATOMY'}</div><SheetTitle ref={detailTitle} tabIndex={-1} className="structure-title">{chosen?.name}</SheetTitle></div>
+  <Sheet open={details&&selectedParts.length>0} modal={false} disablePointerDismissal onOpenChange={setDetails}><SheetContent initialFocus={detailTitle} className={`detail-sheet glass ${state.isolate?'is-isolated':''}`} showCloseButton={true}>
+   <div className="sheet-handle mobile-only" />
+   <div className="detail-header"><div className="detail-accent" style={{background:system?.color}}/><div className="eyebrow">{system?.name??'ANATOMY'}</div><SheetTitle ref={detailTitle} tabIndex={-1} className="structure-title">{chosen?.name}</SheetTitle></div>
   <div className="detail-scroll" key={`${chosen?.id}-${state.isolate}`}>
    <SheetDescription className="structure-description">{chosen&&selected?(sex==='female'&&selected.system==='reproductive'&&!EXPLANATIONS[chosen.name.toLowerCase()]?'Female reproductive structures include the ovaries, uterine tubes, uterus, cervix, and vagina. Together they support oocyte development, fertilization, menstruation, and pregnancy.':explanation(chosen.name,selected.system)):''}</SheetDescription>
    {chosen&&!EXPLANATIONS[chosen.name.toLowerCase()]&&<span className="context-note">System overview · structure identified from source anatomy</span>}
    
    {(isHeart||isKidney)&&<div style={{marginTop:4,padding:'8px 10px',background:'#f8fafc',borderRadius:8,border:'1px solid #e2e8f0'}}>
     <div style={{fontSize:11,fontWeight:600,color:'#475569',marginBottom:6,display:'flex',alignItems:'center',gap:5}}><Split size={13}/> Internal Structures</div>
-    <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
-     {isHeart&&['Mitral valve','Tricuspid valve','Aortic valve','Pulmonary valve','Left ventricle','Right ventricle','Papillary muscle'].map(term=><Button key={term} variant="outline" size="sm" style={{fontSize:10,height:24,padding:'0 6px'}} onClick={()=>{const t=atlas?.concepts.find(c=>c.name.toLowerCase().includes(term.toLowerCase()));if(t)choose(t);else{const p=atlas?.parts.find(x=>x.name.toLowerCase().includes(term.toLowerCase()));if(p)choosePart(p.id);}}}>{term}</Button>)}
-     {isKidney&&['Renal pyramid','Renal pelvis','Calyx','Outer cortex','Renal papilla','Kidney capsule'].map(term=><Button key={term} variant="outline" size="sm" style={{fontSize:10,height:24,padding:'0 6px'}} onClick={()=>{const t=atlas?.concepts.find(c=>c.name.toLowerCase().includes(term.toLowerCase()));if(t)choose(t);else{const p=atlas?.parts.find(x=>x.name.toLowerCase().includes(term.toLowerCase()));if(p)choosePart(p.id);}}}>{term}</Button>)}
+    <div className="internal-chips-scroll" style={{display:'flex',flexWrap:'nowrap',overflowX:'auto',WebkitOverflowScrolling:'touch',gap:5,paddingBottom:2}}>
+     {isHeart&&['Mitral valve','Tricuspid valve','Aortic valve','Pulmonary valve','Left ventricle','Right ventricle','Papillary muscle'].map(term=><Button key={term} variant="outline" size="sm" style={{fontSize:10,height:26,padding:'0 8px',whiteSpace:'nowrap',flexShrink:0}} onClick={()=>{const t=atlas?.concepts.find(c=>c.name.toLowerCase().includes(term.toLowerCase()));if(t)choose(t);else{const p=atlas?.parts.find(x=>x.name.toLowerCase().includes(term.toLowerCase()));if(p)choosePart(p.id);}}}>{term}</Button>)}
+     {isKidney&&['Renal pyramid','Renal pelvis','Calyx','Outer cortex','Renal papilla','Kidney capsule'].map(term=><Button key={term} variant="outline" size="sm" style={{fontSize:10,height:26,padding:'0 8px',whiteSpace:'nowrap',flexShrink:0}} onClick={()=>{const t=atlas?.concepts.find(c=>c.name.toLowerCase().includes(term.toLowerCase()));if(t)choose(t);else{const p=atlas?.parts.find(x=>x.name.toLowerCase().includes(term.toLowerCase()));if(p)choosePart(p.id);}}}>{term}</Button>)}
     </div>
    </div>}
 
