@@ -51,6 +51,17 @@ export default function Home(){
  const parts=useMemo(()=>new Map(atlas?.parts.map(p=>[p.id,p])),[atlas]);
  const counts=useMemo(()=>Object.fromEntries(SYSTEMS.map(s=>[s.id,atlas?.parts.filter(p=>p.system===s.id).length??0])),[atlas]);
  const activeSystems=SYSTEMS.filter(s=>counts[s.id]>0);
+ const defaultSystemIds=useMemo(()=>activeSystems.map(x=>x.id).filter(x=>x!=='pregnancy'),[activeSystems]);
+ const organSystemIds:SystemId[]=useMemo(()=>['cardiac','respiratory','digestive','urinary','endocrine','reproductive'],[]);
+ const isAllPreset=useMemo(()=>{
+  const visibleStd=state.visible.filter(id=>id!=='pregnancy');
+  return visibleStd.length===defaultSystemIds.length&&defaultSystemIds.every(id=>state.visible.includes(id));
+ },[state.visible,defaultSystemIds]);
+ const isSkeletonPreset=useMemo(()=>state.visible.length===1&&state.visible[0]==='skeletal',[state.visible]);
+ const isOrganPreset=useMemo(()=>{
+  const visibleStd=state.visible.filter(id=>id!=='pregnancy');
+  return visibleStd.length===organSystemIds.length&&organSystemIds.every(id=>state.visible.includes(id));
+ },[state.visible,organSystemIds]);
  const selectedParts=state.selected.map(id=>parts.get(id)).filter(p=>!!p),selected=selectedParts[0],system=SYSTEMS.find(s=>s.id===selected?.system);
  const visibleCount=atlas?.parts.filter(p=>state.isolate?state.selected.includes(p.id):state.visible.includes(p.system)||state.selected.includes(p.id)).length??0;
  const results=useMemo(()=>{
@@ -125,14 +136,13 @@ export default function Home(){
    <section className={`layers-panel glass ${panel==='layers'?'mobile-open':''}`} aria-label="Anatomical layers">
     <div className="sheet-handle mobile-only" />
     <div className="panel-heading"><span>Systems</span><Button variant="ghost" className="mobile-only icon-button" onClick={()=>setPanel(null)} aria-label="Close systems"><X size={18}/></Button><Badge variant="secondary" className="desktop-only small-number">{activeSystems.length}</Badge></div>
-    <div className="layer-presets">
-     <Button variant="ghost" aria-pressed={activeSystems.every(x=>state.visible.includes(x.id))} onClick={()=>setState(s=>({...s,selected:[],isolate:false,visible:activeSystems.map(x=>x.id).filter(x=>x!=='pregnancy')}))}>All</Button>
-     <Button variant="ghost" aria-pressed={state.visible.length===1&&state.visible[0]==='skeletal'} onClick={()=>setState(s=>({...s,selected:[],isolate:false,visible:['skeletal']}))}>Skeleton</Button>
-     <Button variant="ghost" aria-pressed={['cardiac','respiratory','digestive','urinary','endocrine','reproductive'].every(id=>state.visible.includes(id as SystemId))} onClick={()=>setState(s=>({...s,selected:[],isolate:false,visible:['cardiac','respiratory','digestive','urinary','endocrine','reproductive']}))}>Organs</Button>
-     <Button variant="ghost" aria-pressed={state.visible.length===1&&state.visible[0]==='reproductive'} onClick={()=>setState(s=>({...s,selected:[],isolate:false,visible:['reproductive']}))}>Reproductive</Button>
+    <div className="layer-presets" role="group" aria-label="System visibility presets">
+     <Button variant="ghost" aria-pressed={isAllPreset} onClick={()=>setState(s=>({...s,selected:[],isolate:false,visible:defaultSystemIds}))} title="Show all anatomical systems">All</Button>
+     <Button variant="ghost" aria-pressed={isSkeletonPreset} onClick={()=>setState(s=>({...s,selected:[],isolate:false,visible:['skeletal']}))} title="Show skeleton only (bones)">Skeleton</Button>
+     <Button variant="ghost" aria-pressed={isOrganPreset} onClick={()=>setState(s=>({...s,selected:[],isolate:false,visible:organSystemIds}))} title="Show internal visceral organs (heart, lungs, digestive, urinary, reproductive, endocrine)">Organs</Button>
     </div>
     <div className="system-list">{activeSystems.map(s=><div className={`system-row ${state.visible.includes(s.id)?'enabled':''}`} key={s.id}><Button variant="ghost" className="system-name" title={`Show only ${s.name.toLowerCase()}`} onClick={()=>setState(v=>({...v,visible:[s.id],isolate:false,selected:[]}))}><span className="system-dot" style={{background:s.color}}/>{s.name}<span className="system-count">{counts[s.id]}</span></Button><Switch checked={state.visible.includes(s.id)} onCheckedChange={()=>toggle(s.id)} aria-label={`Show ${s.name.toLowerCase()}`} /></div>)}</div>
-    <div className="panel-foot"><span>{visibleCount.toLocaleString()} pieces visible</span><Button variant="ghost" onClick={()=>setState(s=>({...s,visible:[],selected:[],isolate:false}))}>Hide all</Button></div>
+    <div className="panel-foot"><span>{visibleCount.toLocaleString()} pieces visible</span><Button variant="ghost" onClick={()=>setState(s=>({...s,visible:visibleCount===0?defaultSystemIds:[],selected:[],isolate:false}))}>{visibleCount===0?'Show all':'Hide all'}</Button></div>
    </section>
    {panel==='search'&&<section className="search-panel glass" aria-label="Find anatomy">
     <div className="sheet-handle mobile-only" />
