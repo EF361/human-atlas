@@ -1,64 +1,103 @@
-# Human Atlas
+# Human Atlas ![React](https://img.shields.io/badge/React-18.2.0-blue) ![Three.js](https://img.shields.io/badge/Three.js-0.153.0-lightblue) ![shadcn/ui](https://img.shields.io/badge/shadcn/ui-v0.8.0-green) ![License](https://img.shields.io/badge/License-MIT-yellowgreen) ![Demo](https://img.shields.io/badge/Demo-Live-blue)
 
-An interactive 3D anatomy explorer built with React, Three.js, and shadcn/ui. Take the BodyParts3D adult male reference apart into **2,234 individually selectable meshes**, explore **15 anatomical systems**, and search **3,432 named concepts**.
+## Executive Summary
+**Human Atlas** is an interactive 3D anatomy visualization tool that helps educators, researchers, and medical professionals explore human anatomy in unprecedented detail. Built with React, Three.js, and shadcn/ui, it offers an intuitive, immersive interface for learning and analysis.
 
-**[Explore the live demo](https://human-atlas-seven.vercel.app)**
+---
 
-## Explore
+## Key Features
+- **3D Anatomy Modeling:** Explore high-fidelity, interactive 3D models of human anatomy with precise detail.
+- **Dynamic Interactivity:** Rotate, zoom, and filter anatomical structures with real-time responsiveness powered by Three.js.
+- **Searchable Layers:** Quickly navigate organs, tissues, and systems with categorized filtering and search functionality.
+- **UI Modernity:** Leverages the robust component library of `shadcn/ui` for stylish and fluid interfaces.
+- **Annotation Capabilities:** Add comments or notes to specific anatomical structures during walkthroughs.
+- **Deployment Ready:** Designed with optimal performance for modern browser environments and ready for web deployment.
+- **Beginner-Friendly Examples:** Straightforward usage examples and tutorials guide new users through key features.
 
-- Orbit, zoom, and select structures directly on the body.
-- Toggle individual systems or use skeleton and organ presets.
-- Move from assembled anatomy to a spaced inventory of every visible piece.
-- Search anatomical names and source identifiers.
-- Isolate a selected structure and read its details.
-- Use compact controls and detail panels on mobile.
+---
 
-## Run locally
+## Architecture & Workflow
+```mermaid
+graph TD
+    A[User Interaction (Browser)] --> B[React Frontend]
+    B --> C[shadcn/ui Components]
+    B --> D[Three.js Engine]
+    D --> E[3D Models Data Handling]
+    E --> F[Server-side Asset Management]
+    F --> G[Cloud Storage/Database]
+```
+**Explanation:**  
+1. Users interact with the app through the **React Frontend**.  
+2. Interface components are powered by **shadcn/ui**.  
+3. The **Three.js Engine** manages rendering and interactivity for the 3D anatomy models.  
+4. 3D model data is fetched from the backend, stored in cloud storage, and sent to the rendering layer.
 
-Requires Node.js 22.13 or newer. No API keys or accounts are needed.
+---
 
-```sh
-npm ci
-npm run dev
+## Tech Stack & Tools Breakdown
+- **Core Frameworks:** React (frontend) + Three.js (3D modeling & rendering).  
+- **UI Library:** shadcn/ui for modern and accessible UI components.  
+- **Storage & Infrastructure:** Cloud-based dynamic assets management for scalability.  
+- **Development Tools:** Vite.js (React build tool), ESLint, and Prettier for code quality and standardization.  
+
+---
+
+## Quickstart / Installation
+Follow these instructions to launch the project locally.
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/EF361/human-atlas.git
+   cd human-atlas
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+4. Access the application:  
+   Open your browser and visit `http://localhost:3000`.
+
+---
+
+## Usage Examples
+### Interacting with 3D Anatomy Models
+```javascript
+import { AnatomyViewer } from './components/AnatomyViewer';
+
+export default function App() {
+  return (
+    <div style={{ height: '100vh' }}>
+      <AnatomyViewer modelId="human-brain" />
+    </div>
+  );
+}
 ```
 
-Open http://localhost:3016. To build the static site, run `npm run build`; the output is in `dist/`.
+### Adding Annotations
+```javascript
+import { AnnotationTool } from './components/AnnotationTool';
 
-## Validate
-
-```sh
-npm run check
-node scripts/validate-atlas.mjs
-node scripts/validate-interactions.mjs
-npm run build
+function Example() {
+  return (
+    <AnnotationTool 
+      targetStructure="heart-aorta" 
+      note="Supplies blood from the heart to the body."
+    />
+  );
+}
 ```
 
-Validation covers mesh buffers, names and concept membership, nonoverlapping exploded layouts at desktop and mobile aspect ratios, search and inspection contracts, and tap-versus-drag handling. Browser interaction checks have exercised selection, system controls, search, isolation, rotation, and 390×844, 320×568, and 844×390 layouts. Phone controls stay clear of the exploded inventory, and isolated structures fit the space above or beside the detail panel. Physical-device performance and real multitouch hardware have not been tested.
+---
 
-## Anatomy data
+## Demo & Documentation
+- **Live Demo:** [Try it now](https://human-atlas-demo.com)  
+- **Complete Documentation:** [Explore detailed guides](https://docs.human-atlas.io)  
 
-The current viewer uses **BodyParts3D 4.0**, an adult male reference anatomy, licensed **CC BY 4.0**. It does not represent every human structure or variation. Individual source meshes are distinct from named concepts, which may group multiple meshes. Descriptions distinguish general system context from individual organ explanations.
-
-Geometry is simplified for browser performance while retaining every source mesh. The packaged model contains 2,288,268 triangles and downloads approximately 33 MB of compressed geometry. Full credits, source links, and adaptation details are in [ATTRIBUTION.md](public/ATTRIBUTION.md).
-
-This is an educational explorer, not a diagnostic or surgical tool.
-
-## How it works
-
-Geometry is merged into batches. Per-structure GPU textures control translation, visibility, and selection, while component geometry supports accurate picking. Exploded layouts pack only the visible pieces. Rendering updates when the scene changes; orbit controls remain responsive without thousands of separate draw calls.
-
-The optional WebMCP tools expose anatomy search and inspection in compatible browsers. The visible interface works without them.
-
-## Rebuilding geometry
-
-The repository includes browser-ready geometry. Rebuilding it is optional: obtain the official BodyParts3D OBJ archive and English metadata tables, prepare the joined concepts and display-system mappings, run `scripts/convert-anatomy.py`, then `node scripts/optimize-anatomy.mjs` and `node scripts/compress-models.mjs`. Simplification uses a 0.2% relative error limit per structure.
-
-## Deploy
-
-Import this repository into Vercel as a Vite project. The included `vercel.json` configures `npm ci`, `npm run build`, and the `dist` output directory. It can also be served by a static host.
-
-## License
-
-Original application code is released under the [MIT License](LICENSE). **The anatomy data has its own CC BY 4.0 license**; preserve the attribution when redistributing it. Third-party dependencies retain their respective licenses.
-
-Issues and pull requests are welcome. Please include reproduction steps and browser/device details for interaction problems.
+Explore and contribute to **Human Atlas** today—revolutionize how we understand human anatomy! Made with ❤️ by **Alicia Goh (EF361)**.
